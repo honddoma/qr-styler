@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase-client";
 import type { QrStylePreset } from "@/lib/qr-presets";
 
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+
 function isValidHttpUrl(value: string) {
   try {
     const url = new URL(value);
@@ -15,14 +17,18 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const targetUrl = body?.targetUrl as string | undefined;
   const preset = (body?.preset as QrStylePreset | undefined) ?? "basic";
+  const color = body?.color as string | undefined;
 
   if (!targetUrl || !isValidHttpUrl(targetUrl)) {
     return NextResponse.json({ error: "유효한 URL을 입력해주세요." }, { status: 400 });
   }
+  if (color && !HEX_COLOR_RE.test(color)) {
+    return NextResponse.json({ error: "색상 형식이 올바르지 않습니다." }, { status: 400 });
+  }
 
   const supabase = getSupabase();
   const { data, error } = await supabase
-    .rpc("create_qr_code", { p_target_url: targetUrl, p_preset: preset })
+    .rpc("create_qr_code", { p_target_url: targetUrl, p_preset: preset, p_color: color ?? null })
     .single();
 
   if (error || !data) {

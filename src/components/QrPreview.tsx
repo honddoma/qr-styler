@@ -7,10 +7,11 @@ import { buildQrOptions, type QrStylePreset } from "@/lib/qr-presets";
 type QrPreviewProps = {
   data: string;
   preset: QrStylePreset;
+  color?: string;
   size?: number;
 };
 
-export default function QrPreview({ data, preset, size = 260 }: QrPreviewProps) {
+export default function QrPreview({ data, preset, color, size = 260 }: QrPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const qrRef = useRef<QRCodeStyling | null>(null);
 
@@ -21,7 +22,7 @@ export default function QrPreview({ data, preset, size = 260 }: QrPreviewProps) 
       if (qrRef.current || !containerRef.current) return;
       const { default: QRCodeStyling } = await import("qr-code-styling");
       if (cancelled || !containerRef.current) return;
-      qrRef.current = new QRCodeStyling(buildQrOptions(data || " ", preset, size));
+      qrRef.current = new QRCodeStyling(buildQrOptions(data || " ", preset, size, color));
       qrRef.current.append(containerRef.current);
     }
 
@@ -29,12 +30,12 @@ export default function QrPreview({ data, preset, size = 260 }: QrPreviewProps) 
     return () => {
       cancelled = true;
     };
-  }, [data, preset, size]);
+  }, [data, preset, size, color]);
 
   useEffect(() => {
     if (!qrRef.current) return;
-    qrRef.current.update(buildQrOptions(data || " ", preset, size));
-  }, [data, preset, size]);
+    qrRef.current.update(buildQrOptions(data || " ", preset, size, color));
+  }, [data, preset, size, color]);
 
   async function download(extension: "png" | "svg") {
     if (!qrRef.current) return;

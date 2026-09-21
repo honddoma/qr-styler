@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QrPreview from "@/components/QrPreview";
 import StylePicker from "@/components/StylePicker";
-import type { QrStylePreset } from "@/lib/qr-presets";
+import { PRESET_DEFAULT_COLOR, type QrStylePreset } from "@/lib/qr-presets";
 
 type Mode = "static" | "dynamic";
 
@@ -21,9 +21,12 @@ export default function HomeClient() {
   const [mode, setMode] = useState<Mode>("static");
   const [url, setUrl] = useState("");
   const [preset, setPreset] = useState<QrStylePreset>("basic");
+  const [customColor, setCustomColor] = useState<string | null>(null);
   const [dynamicResult, setDynamicResult] = useState<DynamicResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const pickerColor = customColor ?? PRESET_DEFAULT_COLOR[preset];
 
   const previewData = useMemo(() => {
     if (mode === "dynamic" && dynamicResult) return dynamicResult.redirectUrl;
@@ -37,7 +40,7 @@ export default function HomeClient() {
       const res = await fetch("/api/qr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUrl: url, preset }),
+        body: JSON.stringify({ targetUrl: url, preset, color: customColor ?? undefined }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -125,6 +128,29 @@ export default function HomeClient() {
         <StylePicker value={preset} onChange={setPreset} />
       </div>
 
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium">색상</span>
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={pickerColor}
+            onChange={(event) => setCustomColor(event.target.value)}
+            className="h-10 w-14 cursor-pointer rounded-lg border border-black/15 bg-transparent dark:border-white/20"
+            aria-label="QR 색상 선택"
+          />
+          <span className="text-sm text-zinc-500">{pickerColor}</span>
+          {customColor && (
+            <button
+              type="button"
+              onClick={() => setCustomColor(null)}
+              className="text-sm text-zinc-500 underline hover:text-zinc-700 dark:hover:text-zinc-300"
+            >
+              기본 색상으로
+            </button>
+          )}
+        </div>
+      </div>
+
       {mode === "dynamic" && (
         <div className="flex flex-col gap-3">
           <button
@@ -151,7 +177,7 @@ export default function HomeClient() {
       )}
 
       {(mode === "static" ? url : dynamicResult) && (
-        <QrPreview data={previewData} preset={preset} />
+        <QrPreview data={previewData} preset={preset} color={customColor ?? undefined} />
       )}
     </div>
   );
