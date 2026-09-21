@@ -64,9 +64,9 @@ export default function HomeClient() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">QR Styler</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">QR 만들기</h1>
         <p className="text-zinc-600 dark:text-zinc-400">
-          URL을 입력해 스타일이 적용된 QR코드를 만들고 이미지로 저장하세요.
+          URL을 입력해 쪼삣한 QR코드를 만들고 이미지로 저장하세요
         </p>
       </header>
 
