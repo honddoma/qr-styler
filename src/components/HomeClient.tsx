@@ -1,14 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QrPreview from "@/components/QrPreview";
 import StylePicker from "@/components/StylePicker";
 import { PRESET_DEFAULT_COLOR, type QrStylePreset } from "@/lib/qr-presets";
 
-type Mode = "static" | "dynamic";
-
-type DynamicResult = {
+type QrResult = {
   slug: string;
   redirectUrl: string;
   editUrl: string;
@@ -19,23 +17,17 @@ export default function HomeClient() {
   const searchParams = useSearchParams();
   const notFoundError = searchParams.get("error") === "qr-not-found";
 
-  const [mode, setMode] = useState<Mode>("static");
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [preset, setPreset] = useState<QrStylePreset>("basic");
   const [customColor, setCustomColor] = useState<string | null>(null);
-  const [dynamicResult, setDynamicResult] = useState<DynamicResult | null>(null);
+  const [result, setResult] = useState<QrResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pickerColor = customColor ?? PRESET_DEFAULT_COLOR[preset];
 
-  const previewData = useMemo(() => {
-    if (mode === "dynamic" && dynamicResult) return dynamicResult.redirectUrl;
-    return url;
-  }, [mode, dynamicResult, url]);
-
-  async function createDynamicQr() {
+  async function createQr() {
     setError(null);
     setLoading(true);
     try {
@@ -56,7 +48,7 @@ export default function HomeClient() {
       }
       const redirectUrl = `${window.location.origin}/q/${json.slug}`;
       const editUrl = `${window.location.origin}/edit/${json.slug}?token=${json.editToken}`;
-      setDynamicResult({ slug: json.slug, redirectUrl, editUrl, name: name.trim() });
+      setResult({ slug: json.slug, redirectUrl, editUrl, name: name.trim() });
     } catch {
       setError("네트워크 오류가 발생했습니다.");
     } finally {
@@ -64,15 +56,9 @@ export default function HomeClient() {
     }
   }
 
-  function handleModeChange(nextMode: Mode) {
-    setMode(nextMode);
-    setDynamicResult(null);
-    setError(null);
-  }
-
   function handleUrlChange(value: string) {
     setUrl(value);
-    setDynamicResult(null);
+    setResult(null);
   }
 
   return (
@@ -90,27 +76,6 @@ export default function HomeClient() {
         </p>
       )}
 
-      <div className="flex gap-2 rounded-full bg-black/5 p-1 text-sm font-medium dark:bg-white/10">
-        <button
-          type="button"
-          onClick={() => handleModeChange("static")}
-          className={`flex-1 rounded-full px-4 py-2 transition-colors ${
-            mode === "static" ? "bg-white shadow dark:bg-black" : ""
-          }`}
-        >
-          정적 QR
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeChange("dynamic")}
-          className={`flex-1 rounded-full px-4 py-2 transition-colors ${
-            mode === "dynamic" ? "bg-white shadow dark:bg-black" : ""
-          }`}
-        >
-          동적 QR (URL 변경 가능)
-        </button>
-      </div>
-
       <div className="flex flex-col gap-2">
         <label htmlFor="url" className="text-sm font-medium">
           연결할 URL
@@ -123,32 +88,28 @@ export default function HomeClient() {
           onChange={(event) => handleUrlChange(event.target.value)}
           className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
         />
-        {mode === "dynamic" && (
-          <p className="text-xs text-zinc-500">
-            동적 QR은 나중에 이 URL을 바꿔도 같은 QR코드 이미지를 계속 사용할 수 있습니다.
-          </p>
-        )}
+        <p className="text-xs text-zinc-500">
+          생성 후 나오는 관리 링크를 저장해두면, 나중에 URL이 바뀌어도 같은 QR코드 이미지를 계속 사용할 수 있습니다.
+        </p>
       </div>
 
-      {mode === "dynamic" && (
-        <div className="flex flex-col gap-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            이름 (선택)
-          </label>
-          <input
-            id="name"
-            type="text"
-            placeholder="예: 명함용, 포스터용"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            maxLength={60}
-            className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
-          />
-          <p className="text-xs text-zinc-500">
-            여러 개를 만들 때 관리 링크를 구분하기 쉽도록 이름을 붙여두세요.
-          </p>
-        </div>
-      )}
+      <div className="flex flex-col gap-2">
+        <label htmlFor="name" className="text-sm font-medium">
+          이름 (선택)
+        </label>
+        <input
+          id="name"
+          type="text"
+          placeholder="예: 명함용, 포스터용"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          maxLength={60}
+          className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
+        />
+        <p className="text-xs text-zinc-500">
+          여러 개를 만들 때 관리 링크를 구분하기 쉽도록 이름을 붙여두세요.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">스타일</span>
@@ -178,35 +139,33 @@ export default function HomeClient() {
         </div>
       </div>
 
-      {mode === "dynamic" && (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            disabled={!url || loading}
-            onClick={createDynamicQr}
-            className="self-start rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black/80 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-white/80"
-          >
-            {loading ? "생성 중..." : "동적 QR 만들기"}
-          </button>
-          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-          {dynamicResult && (
-            <div className="flex flex-col gap-1 rounded-lg border border-black/10 p-4 text-sm dark:border-white/10">
-              <p className="font-medium">
-                {dynamicResult.name || "이름 없음"} — 관리 링크 (URL 수정용, 꼭 저장해두세요)
-              </p>
-              <a
-                href={dynamicResult.editUrl}
-                className="break-all text-blue-600 underline dark:text-blue-400"
-              >
-                {dynamicResult.editUrl}
-              </a>
-            </div>
-          )}
-        </div>
-      )}
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          disabled={!url || loading}
+          onClick={createQr}
+          className="self-start rounded-full bg-black px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-black/80 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-white/80"
+        >
+          {loading ? "생성 중..." : "QR 만들기"}
+        </button>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {result && (
+          <div className="flex flex-col gap-1 rounded-lg border border-black/10 p-4 text-sm dark:border-white/10">
+            <p className="font-medium">
+              {result.name || "이름 없음"} — 관리 링크 (URL 수정용, 꼭 저장해두세요)
+            </p>
+            <a
+              href={result.editUrl}
+              className="break-all text-blue-600 underline dark:text-blue-400"
+            >
+              {result.editUrl}
+            </a>
+          </div>
+        )}
+      </div>
 
-      {(mode === "static" ? url : dynamicResult) && (
-        <QrPreview data={previewData} preset={preset} color={customColor ?? undefined} />
+      {result && (
+        <QrPreview data={result.redirectUrl} preset={preset} color={customColor ?? undefined} />
       )}
     </div>
   );
