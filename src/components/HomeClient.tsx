@@ -46,6 +46,8 @@ export default function HomeClient() {
           preset,
           color: customColor ?? undefined,
           name: name.trim() || undefined,
+          centerDecoration: centerDecoration !== "none" ? centerDecoration : undefined,
+          centerText: centerDecoration === "text" ? centerText.trim() || undefined : undefined,
         }),
       });
       const json = await res.json();

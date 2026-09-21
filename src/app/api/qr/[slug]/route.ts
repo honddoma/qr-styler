@@ -32,12 +32,23 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       return NextResponse.json({ error: "찾을 수 없거나 권한이 없습니다." }, { status: 404 });
     }
 
-    const row = data as { slug: string; target_url: string; preset: string; name: string | null };
+    const row = data as {
+      slug: string;
+      target_url: string;
+      preset: string;
+      name: string | null;
+      color: string | null;
+      center_decoration: string | null;
+      center_text: string | null;
+    };
     return NextResponse.json({
       slug: row.slug,
       targetUrl: row.target_url,
       preset: row.preset,
       name: row.name,
+      color: row.color,
+      centerDecoration: row.center_decoration,
+      centerText: row.center_text,
     });
   } catch (err) {
     console.error("GET /api/qr/[slug] failed:", err);

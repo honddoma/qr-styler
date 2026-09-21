@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import QrPreview from "@/components/QrPreview";
+import type { QrStylePreset } from "@/lib/qr-presets";
+import { buildCenterImage, type CenterDecoration } from "@/lib/center-decoration";
 
 type Status = "loading" | "ready" | "not-found" | "saving" | "saved" | "error";
 
@@ -12,7 +15,17 @@ export default function EditClient({ slug }: { slug: string }) {
   const [status, setStatus] = useState<Status>(token ? "loading" : "not-found");
   const [targetUrl, setTargetUrl] = useState("");
   const [name, setName] = useState("");
+  const [preset, setPreset] = useState<QrStylePreset>("basic");
+  const [color, setColor] = useState<string | undefined>(undefined);
+  const [centerDecoration, setCenterDecoration] = useState<CenterDecoration>("none");
+  const [centerText, setCenterText] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [redirectUrl, setRedirectUrl] = useState("");
+
+  const centerImage = useMemo(
+    () => buildCenterImage(centerDecoration, centerText, color ?? "#111111"),
+    [centerDecoration, centerText, color]
+  );
 
   useEffect(() => {
     if (!token) return;
@@ -23,8 +36,13 @@ export default function EditClient({ slug }: { slug: string }) {
           return;
         }
         const json = await res.json();
+        setRedirectUrl(`${window.location.origin}/q/${slug}`);
         setTargetUrl(json.targetUrl);
         setName(json.name ?? "");
+        setPreset((json.preset as QrStylePreset) ?? "basic");
+        setColor(json.color ?? undefined);
+        setCenterDecoration((json.centerDecoration as CenterDecoration) ?? "none");
+        setCenterText(json.centerText ?? "");
         setStatus("ready");
       })
       .catch(() => setStatus("not-found"));
@@ -79,6 +97,10 @@ export default function EditClient({ slug }: { slug: string }) {
           QR코드 이미지는 그대로 두고 연결되는 URL만 바꿀 수 있습니다.
         </p>
       </header>
+
+      {redirectUrl && (
+        <QrPreview data={redirectUrl} preset={preset} color={color} centerImage={centerImage} size={200} />
+      )}
 
       <div className="flex flex-col gap-2">
         <label htmlFor="qr-name" className="text-sm font-medium">
