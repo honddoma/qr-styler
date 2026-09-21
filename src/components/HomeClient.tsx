@@ -3,10 +3,8 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QrPreview from "@/components/QrPreview";
-import ShapedQrPreview from "@/components/ShapedQrPreview";
 import StylePicker from "@/components/StylePicker";
 import { PRESET_DEFAULT_COLOR, type QrStylePreset } from "@/lib/qr-presets";
-import { QR_BACKGROUND_SHAPES, type QrBackgroundShape } from "@/lib/shapes";
 
 type QrResult = {
   slug: string;
@@ -23,7 +21,6 @@ export default function HomeClient() {
   const [name, setName] = useState("");
   const [preset, setPreset] = useState<QrStylePreset>("basic");
   const [customColor, setCustomColor] = useState<string | null>(null);
-  const [shape, setShape] = useState<QrBackgroundShape>("square");
   const [result, setResult] = useState<QrResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,26 +139,6 @@ export default function HomeClient() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <span className="text-sm font-medium">배경 모양</span>
-        <div className="flex gap-2">
-          {(Object.keys(QR_BACKGROUND_SHAPES) as QrBackgroundShape[]).map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setShape(option)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                shape === option
-                  ? "bg-black text-white dark:bg-white dark:text-black"
-                  : "border border-black/15 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
-              }`}
-            >
-              {QR_BACKGROUND_SHAPES[option]}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3">
         <button
           type="button"
@@ -187,11 +164,8 @@ export default function HomeClient() {
         )}
       </div>
 
-      {result && shape === "square" && (
+      {result && (
         <QrPreview data={result.redirectUrl} preset={preset} color={customColor ?? undefined} />
-      )}
-      {result && shape !== "square" && (
-        <ShapedQrPreview data={result.redirectUrl} preset={preset} color={pickerColor} shape={shape} />
       )}
     </div>
   );
