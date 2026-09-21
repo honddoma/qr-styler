@@ -31,20 +31,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: `이름은 ${NAME_MAX_LENGTH}자 이내로 입력해주세요.` }, { status: 400 });
   }
 
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .rpc("create_qr_code", {
-      p_target_url: targetUrl,
-      p_preset: preset,
-      p_color: color ?? null,
-      p_name: name ?? null,
-    })
-    .single();
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .rpc("create_qr_code", {
+        p_target_url: targetUrl,
+        p_preset: preset,
+        p_color: color ?? null,
+        p_name: name ?? null,
+      })
+      .single();
 
-  if (error || !data) {
-    return NextResponse.json({ error: "QR 코드를 생성하지 못했습니다." }, { status: 500 });
+    if (error || !data) {
+      return NextResponse.json({ error: "QR 코드를 생성하지 못했습니다." }, { status: 500 });
+    }
+
+    const row = data as { slug: string; edit_token: string };
+    return NextResponse.json({ slug: row.slug, editToken: row.edit_token });
+  } catch (err) {
+    console.error("POST /api/qr failed:", err);
+    return NextResponse.json({ error: "서버 설정 오류로 QR 코드를 생성하지 못했습니다." }, { status: 500 });
   }
-
-  const row = data as { slug: string; edit_token: string };
-  return NextResponse.json({ slug: row.slug, editToken: row.edit_token });
 }

@@ -6,13 +6,18 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const supabase = getSupabase();
 
-  const { data, error } = await supabase.rpc("resolve_qr_code", { p_slug: slug });
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase.rpc("resolve_qr_code", { p_slug: slug });
 
-  if (error || !data) {
+    if (error || !data) {
+      return NextResponse.redirect(new URL("/?error=qr-not-found", request.url));
+    }
+
+    return NextResponse.redirect(data as string, { status: 302 });
+  } catch (err) {
+    console.error("GET /q/[slug] failed:", err);
     return NextResponse.redirect(new URL("/?error=qr-not-found", request.url));
   }
-
-  return NextResponse.redirect(data as string, { status: 302 });
 }
