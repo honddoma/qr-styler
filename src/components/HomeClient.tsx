@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import QrPreview from "@/components/QrPreview";
 import StylePicker from "@/components/StylePicker";
 import { PRESET_DEFAULT_COLOR, type QrStylePreset } from "@/lib/qr-presets";
+import { buildCenterImage, CENTER_DECORATIONS, type CenterDecoration } from "@/lib/center-decoration";
 
 type QrResult = {
   slug: string;
@@ -21,11 +22,17 @@ export default function HomeClient() {
   const [name, setName] = useState("");
   const [preset, setPreset] = useState<QrStylePreset>("basic");
   const [customColor, setCustomColor] = useState<string | null>(null);
+  const [centerDecoration, setCenterDecoration] = useState<CenterDecoration>("none");
+  const [centerText, setCenterText] = useState("");
   const [result, setResult] = useState<QrResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const pickerColor = customColor ?? PRESET_DEFAULT_COLOR[preset];
+  const centerImage = useMemo(
+    () => buildCenterImage(centerDecoration, centerText, pickerColor),
+    [centerDecoration, centerText, pickerColor]
+  );
 
   async function createQr() {
     setError(null);
@@ -139,6 +146,41 @@ export default function HomeClient() {
         </div>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium">가운데 장식</span>
+        <div className="flex gap-2">
+          {(Object.keys(CENTER_DECORATIONS) as CenterDecoration[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setCenterDecoration(option)}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                centerDecoration === option
+                  ? "bg-black text-white dark:bg-white dark:text-black"
+                  : "border border-black/15 hover:bg-black/5 dark:border-white/20 dark:hover:bg-white/10"
+              }`}
+            >
+              {CENTER_DECORATIONS[option]}
+            </button>
+          ))}
+        </div>
+        {centerDecoration === "text" && (
+          <input
+            type="text"
+            placeholder="예: LOVE, SALE"
+            value={centerText}
+            onChange={(event) => setCenterText(event.target.value)}
+            maxLength={8}
+            className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
+          />
+        )}
+        {centerDecoration !== "none" && (
+          <p className="text-xs text-zinc-500">
+            가운데 장식이 있으면 오류 복원율을 최대로 올려 스캔이 잘 되도록 자동 조정됩니다.
+          </p>
+        )}
+      </div>
+
       <div className="flex flex-col gap-3">
         <button
           type="button"
@@ -165,7 +207,12 @@ export default function HomeClient() {
       </div>
 
       {result && (
-        <QrPreview data={result.redirectUrl} preset={preset} color={customColor ?? undefined} />
+        <QrPreview
+          data={result.redirectUrl}
+          preset={preset}
+          color={customColor ?? undefined}
+          centerImage={centerImage}
+        />
       )}
     </div>
   );

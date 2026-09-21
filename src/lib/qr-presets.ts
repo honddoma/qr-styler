@@ -67,7 +67,8 @@ export function buildQrOptions(
   data: string,
   preset: QrStylePreset,
   size = 300,
-  color?: string
+  color?: string,
+  centerImage?: string
 ): QrStylingOptions {
   const presetOptions = getPresetOptions(preset, color);
   return {
@@ -76,8 +77,21 @@ export function buildQrOptions(
     type: "svg",
     data,
     margin: 8,
-    qrOptions: { errorCorrectionLevel: "Q" },
-    imageOptions: { crossOrigin: "anonymous", margin: 8 },
+    // Center artwork eats into the code's redundancy, so bump to the highest
+    // error-correction level whenever one is present.
+    qrOptions: { errorCorrectionLevel: centerImage ? "H" : "Q" },
+    image: centerImage,
+    imageOptions: {
+      crossOrigin: "anonymous",
+      margin: 0,
+      // The transparent parts of our decoration images are meant to let the
+      // QR dots show through underneath (e.g. a heart-shaped hole), and
+      // hideBackgroundDots only clears a plain rectangle, not the image's
+      // actual shape — so dots must stay drawn everywhere and the image
+      // itself decides what's visible.
+      hideBackgroundDots: false,
+      imageSize: 0.32,
+    },
     ...presetOptions,
   };
 }
