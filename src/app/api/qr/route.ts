@@ -50,6 +50,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ slug: row.slug, editToken: row.edit_token });
   } catch (err) {
     console.error("POST /api/qr failed:", err);
-    return NextResponse.json({ error: "서버 설정 오류로 QR 코드를 생성하지 못했습니다." }, { status: 500 });
+    const detail = err instanceof Error ? err.message : String(err);
+    return NextResponse.json(
+      { error: "서버 설정 오류로 QR 코드를 생성하지 못했습니다.", detail },
+      { status: 500 }
+    );
   }
 }
