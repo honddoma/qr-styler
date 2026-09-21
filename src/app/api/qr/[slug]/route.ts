@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase-client";
 
+const NAME_MAX_LENGTH = 60;
+
 function isValidHttpUrl(value: string) {
   try {
     const url = new URL(value);
@@ -29,11 +31,12 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "찾을 수 없거나 권한이 없습니다." }, { status: 404 });
   }
 
-  const row = data as { slug: string; target_url: string; preset: string };
+  const row = data as { slug: string; target_url: string; preset: string; name: string | null };
   return NextResponse.json({
     slug: row.slug,
     targetUrl: row.target_url,
     preset: row.preset,
+    name: row.name,
   });
 }
 
@@ -42,6 +45,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const body = await request.json().catch(() => null);
   const token = body?.token as string | undefined;
   const targetUrl = body?.targetUrl as string | undefined;
+  const name = (body?.name as string | undefined)?.trim();
 
   if (!token) {
     return NextResponse.json({ error: "토큰이 필요합니다." }, { status: 401 });
@@ -49,12 +53,16 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (!targetUrl || !isValidHttpUrl(targetUrl)) {
     return NextResponse.json({ error: "유효한 URL을 입력해주세요." }, { status: 400 });
   }
+  if (name && name.length > NAME_MAX_LENGTH) {
+    return NextResponse.json({ error: `이름은 ${NAME_MAX_LENGTH}자 이내로 입력해주세요.` }, { status: 400 });
+  }
 
   const supabase = getSupabase();
-  const { data, error } = await supabase.rpc("update_qr_code_url", {
+  const { data, error } = await supabase.rpc("update_qr_code", {
     p_slug: slug,
     p_token: token,
     p_target_url: targetUrl,
+    p_name: name ?? null,
   });
 
   if (error || !data) {

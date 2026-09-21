@@ -12,6 +12,7 @@ type DynamicResult = {
   slug: string;
   redirectUrl: string;
   editUrl: string;
+  name: string;
 };
 
 export default function HomeClient() {
@@ -20,6 +21,7 @@ export default function HomeClient() {
 
   const [mode, setMode] = useState<Mode>("static");
   const [url, setUrl] = useState("");
+  const [name, setName] = useState("");
   const [preset, setPreset] = useState<QrStylePreset>("basic");
   const [customColor, setCustomColor] = useState<string | null>(null);
   const [dynamicResult, setDynamicResult] = useState<DynamicResult | null>(null);
@@ -40,7 +42,12 @@ export default function HomeClient() {
       const res = await fetch("/api/qr", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUrl: url, preset, color: customColor ?? undefined }),
+        body: JSON.stringify({
+          targetUrl: url,
+          preset,
+          color: customColor ?? undefined,
+          name: name.trim() || undefined,
+        }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -49,7 +56,7 @@ export default function HomeClient() {
       }
       const redirectUrl = `${window.location.origin}/q/${json.slug}`;
       const editUrl = `${window.location.origin}/edit/${json.slug}?token=${json.editToken}`;
-      setDynamicResult({ slug: json.slug, redirectUrl, editUrl });
+      setDynamicResult({ slug: json.slug, redirectUrl, editUrl, name: name.trim() });
     } catch {
       setError("네트워크 오류가 발생했습니다.");
     } finally {
@@ -123,6 +130,26 @@ export default function HomeClient() {
         )}
       </div>
 
+      {mode === "dynamic" && (
+        <div className="flex flex-col gap-2">
+          <label htmlFor="name" className="text-sm font-medium">
+            이름 (선택)
+          </label>
+          <input
+            id="name"
+            type="text"
+            placeholder="예: 명함용, 포스터용"
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            maxLength={60}
+            className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
+          />
+          <p className="text-xs text-zinc-500">
+            여러 개를 만들 때 관리 링크를 구분하기 쉽도록 이름을 붙여두세요.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-2">
         <span className="text-sm font-medium">스타일</span>
         <StylePicker value={preset} onChange={setPreset} />
@@ -164,7 +191,9 @@ export default function HomeClient() {
           {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
           {dynamicResult && (
             <div className="flex flex-col gap-1 rounded-lg border border-black/10 p-4 text-sm dark:border-white/10">
-              <p className="font-medium">관리 링크 (URL 수정용, 꼭 저장해두세요)</p>
+              <p className="font-medium">
+                {dynamicResult.name || "이름 없음"} — 관리 링크 (URL 수정용, 꼭 저장해두세요)
+              </p>
               <a
                 href={dynamicResult.editUrl}
                 className="break-all text-blue-600 underline dark:text-blue-400"

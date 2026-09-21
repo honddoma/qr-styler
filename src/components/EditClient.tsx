@@ -11,6 +11,7 @@ export default function EditClient({ slug }: { slug: string }) {
 
   const [status, setStatus] = useState<Status>(token ? "loading" : "not-found");
   const [targetUrl, setTargetUrl] = useState("");
+  const [name, setName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -23,10 +24,15 @@ export default function EditClient({ slug }: { slug: string }) {
         }
         const json = await res.json();
         setTargetUrl(json.targetUrl);
+        setName(json.name ?? "");
         setStatus("ready");
       })
       .catch(() => setStatus("not-found"));
   }, [slug, token]);
+
+  useEffect(() => {
+    document.title = name ? `${name} - QR Styler 관리` : "QR코드 관리 - QR Styler";
+  }, [name]);
 
   async function handleSave() {
     if (!token) return;
@@ -36,7 +42,7 @@ export default function EditClient({ slug }: { slug: string }) {
       const res = await fetch(`/api/qr/${slug}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, targetUrl }),
+        body: JSON.stringify({ token, targetUrl, name: name.trim() }),
       });
       const json = await res.json();
       if (!res.ok) {
@@ -66,11 +72,28 @@ export default function EditClient({ slug }: { slug: string }) {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-6 px-6 py-16">
       <header className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">QR코드 URL 수정</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {name ? `${name} 관리` : "QR코드 URL 수정"}
+        </h1>
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           QR코드 이미지는 그대로 두고 연결되는 URL만 바꿀 수 있습니다.
         </p>
       </header>
+
+      <div className="flex flex-col gap-2">
+        <label htmlFor="qr-name" className="text-sm font-medium">
+          이름 (선택)
+        </label>
+        <input
+          id="qr-name"
+          type="text"
+          placeholder="예: 명함용, 포스터용"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          maxLength={60}
+          className="rounded-lg border border-black/15 bg-transparent px-4 py-3 text-sm outline-none focus:border-black dark:border-white/20 dark:focus:border-white"
+        />
+      </div>
 
       <div className="flex flex-col gap-2">
         <label htmlFor="target-url" className="text-sm font-medium">
